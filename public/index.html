@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CV Install Schedule</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1e3a5f;
+      color: #fff;
+      padding: 20px 16px 16px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+
+    .tabs {
+      display: flex;
+      background: #fff;
+      border-bottom: 2px solid #e0e0e0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 14px 0;
+      text-align: center;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      color: #1e3a5f;
+      border-bottom-color: #1e3a5f;
+    }
+
+    .content {
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .day-group {
+      margin-bottom: 20px;
+    }
+
+    .day-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #888;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      padding-left: 4px;
+    }
+
+    .day-label.today {
+      color: #1e3a5f;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .card.today-card {
+      border-left: 4px solid #1e3a5f;
+    }
+
+    .card-time {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1e3a5f;
+      min-width: 60px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .card-project {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 48px 16px;
+      color: #999;
+    }
+
+    .empty-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 48px 16px;
+      color: #999;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #e0e0e0;
+      border-top-color: #1e3a5f;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error {
+      text-align: center;
+      padding: 32px 16px;
+      color: #c0392b;
+    }
+
+    .refresh-note {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #aaa;
+      padding: 12px 0 24px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CV Install Schedule</h1>
+    <p id="header-date"></p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="today" onclick="switchTab('today')">Today</button>
+    <button class="tab" data-tab="week" onclick="switchTab('week')">This Week</button>
+  </div>
+
+  <div class="content" id="content">
+    <div class="loading">
+      <div class="spinner"></div>
+      Loading schedule...
+    </div>
+  </div>
+
+  <div class="refresh-note" id="refresh-note"></div>
+
+  <script>
+    let events = [];
+    let activeTab = "today";
+
+    const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    function formatHeaderDate() {
+      const d = new Date();
+      return DAYS[d.getDay()] + ", " + MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+    }
+
+    function isSameDay(a, b) {
+      return a.getFullYear() === b.getFullYear() &&
+             a.getMonth() === b.getMonth() &&
+             a.getDate() === b.getDate();
+    }
+
+    function formatDayLabel(date) {
+      const now = new Date();
+      if (isSameDay(date, now)) return "Today";
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      if (isSameDay(date, tomorrow)) return "Tomorrow";
+      return DAYS[date.getDay()] + ", " + MONTHS[date.getMonth()] + " " + date.getDate();
+    }
+
+    function isToday(dateStr) {
+      return isSameDay(new Date(dateStr), new Date());
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll(".tab").forEach(function(t) {
+        t.classList.toggle("active", t.dataset.tab === tab);
+      });
+      render();
+    }
+
+    function renderCard(ev, today) {
+      var cls = "card" + (today ? " today-card" : "");
+      var timeHtml = ev.time
+        ? '<div class="card-time">' + escapeHtml(ev.time) + '</div>'
+        : '<div class="card-time" style="color:#aaa">--</div>';
+      return '<div class="' + cls + '">' + timeHtml +
+             '<div class="card-project">' + escapeHtml(ev.project) + '</div></div>';
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function render() {
+      var content = document.getElementById("content");
+
+      if (events.length === 0) {
+        var label = activeTab === "today" ? "today" : "this week";
+        content.innerHTML = '<div class="empty"><div class="empty-icon">&#128197;</div>No installs ' + label + '</div>';
+        return;
+      }
+
+      if (activeTab === "today") {
+        var todayEvents = events.filter(function(e) { return isToday(e.date); });
+        if (todayEvents.length === 0) {
+          content.innerHTML = '<div class="empty"><div class="empty-icon">&#9996;&#65039;</div>No installs today</div>';
+          return;
+        }
+        var html = '<div class="day-group"><div class="day-label today">Today</div>';
+        todayEvents.forEach(function(ev) { html += renderCard(ev, true); });
+        html += '</div>';
+        content.innerHTML = html;
+      } else {
+        var groups = {};
+        var order = [];
+        events.forEach(function(ev) {
+          var d = new Date(ev.date);
+          var key = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
+          if (!groups[key]) {
+            groups[key] = { date: d, events: [] };
+            order.push(key);
+          }
+          groups[key].events.push(ev);
+        });
+
+        var html = "";
+        order.forEach(function(key) {
+          var g = groups[key];
+          var today = isSameDay(g.date, new Date());
+          html += '<div class="day-group">';
+          html += '<div class="day-label' + (today ? " today" : "") + '">' + formatDayLabel(g.date) + '</div>';
+          g.events.forEach(function(ev) { html += renderCard(ev, today); });
+          html += '</div>';
+        });
+
+        if (!html) {
+          content.innerHTML = '<div class="empty"><div class="empty-icon">&#128197;</div>No installs this week</div>';
+          return;
+        }
+        content.innerHTML = html;
+      }
+    }
+
+    function updateRefreshNote() {
+      var el = document.getElementById("refresh-note");
+      var now = new Date();
+      var h = now.getHours();
+      var m = now.getMinutes();
+      var ampm = h >= 12 ? "pm" : "am";
+      h = h % 12 || 12;
+      m = m < 10 ? "0" + m : m;
+      el.textContent = "Last updated " + h + ":" + m + ampm + " \u00B7 refreshes every 5 min";
+    }
+
+    async function fetchEvents() {
+      try {
+        var res = await fetch("/api/events");
+        if (!res.ok) throw new Error("Status " + res.status);
+        var data = await res.json();
+        events = data.events || [];
+        render();
+        updateRefreshNote();
+      } catch (err) {
+        console.error("Fetch error:", err);
+        if (events.length === 0) {
+          document.getElementById("content").innerHTML =
+            '<div class="error">Could not load schedule. Pull down to retry.</div>';
+        }
+      }
+    }
+
+    document.getElementById("header-date").textContent = formatHeaderDate();
+    fetchEvents();
+    setInterval(fetchEvents, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
