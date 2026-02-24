@@ -17,26 +17,53 @@ function getEndOfWeek(startOfWeek) {
 }
 
 function parseEvent(event) {
-  const title = event.summary || "";
-  const regex = /^CV Install\s*-\s*(.+?)\s*\+\s*(.+)$/i;
-  const match = title.match(regex);
-
+  const title = (event.summary || "").trim();
   const start = event.start.dateTime || event.start.date;
   const end = event.end.dateTime || event.end.date;
 
-  if (match) {
+  // Format: "CV Install - 2p Lisa Bradley" or "CV Install - 10am Manish (from Tuesday)"
+  const dashFormat = /^CV\s+Install\s*-\s*(\d{1,2}(?:am?|pm?|a|p))\s+(.+)$/i;
+  const dashMatch = title.match(dashFormat);
+  if (dashMatch) {
     return {
-      time: match[1].trim(),
-      project: match[2].trim(),
+      time: dashMatch[1].trim(),
+      project: dashMatch[2].trim(),
       date: start,
       endDate: end,
       raw: title,
     };
   }
 
+  // Format: "CV INSTALL: Corey Wade"
+  const colonFormat = /^CV\s+Install\s*:\s*(.+)$/i;
+  const colonMatch = title.match(colonFormat);
+  if (colonMatch) {
+    return {
+      time: null,
+      project: colonMatch[1].trim(),
+      date: start,
+      endDate: end,
+      raw: title,
+    };
+  }
+
+  // Format with + separator: "CV Install - 10am + Smith Kitchen"
+  const plusFormat = /^CV\s+Install\s*-\s*(.+?)\s*\+\s*(.+)$/i;
+  const plusMatch = title.match(plusFormat);
+  if (plusMatch) {
+    return {
+      time: plusMatch[1].trim(),
+      project: plusMatch[2].trim(),
+      date: start,
+      endDate: end,
+      raw: title,
+    };
+  }
+
+  // Fallback: strip prefix, use rest as project
   return {
     time: null,
-    project: title.replace(/^CV Install\s*-?\s*/i, "").trim() || title,
+    project: title.replace(/^CV\s+Install\s*[-:]?\s*/i, "").trim() || title,
     date: start,
     endDate: end,
     raw: title,
