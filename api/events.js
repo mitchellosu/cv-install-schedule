@@ -21,6 +21,7 @@ function parseEvent(event) {
   const start = event.start.dateTime || event.start.date;
   const end = event.end.dateTime || event.end.date;
   const description = (event.description || "").trim();
+  const location = (event.location || "").trim();
 
   // Format: "CV Install - 2p Lisa Bradley" or "CV Install - 10am Manish (from Tuesday)"
   const dashFormat = /^CV\s+Install\s*-\s*(\d{1,2}(?:am?|pm?|a|p))\s+(.+)$/i;
@@ -31,6 +32,7 @@ function parseEvent(event) {
       project: dashMatch[2].trim(),
       date: start,
       endDate: end,
+      location: location,
       description: description,
       raw: title,
     };
@@ -45,6 +47,7 @@ function parseEvent(event) {
       project: colonMatch[1].trim(),
       date: start,
       endDate: end,
+      location: location,
       description: description,
       raw: title,
     };
@@ -59,6 +62,7 @@ function parseEvent(event) {
       project: plusMatch[2].trim(),
       date: start,
       endDate: end,
+      location: location,
       description: description,
       raw: title,
     };
@@ -70,6 +74,8 @@ function parseEvent(event) {
     project: title.replace(/^CV\s+Install\s*[-:]?\s*/i, "").trim() || title,
     date: start,
     endDate: end,
+    location: location,
+    description: description,
     raw: title,
   };
 }

@@ -163,6 +163,19 @@
       color: #aaa;
       padding: 12px 0 24px;
     }
+
+    .location-link {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 0.82rem;
+      color: #1e3a5f;
+      text-decoration: none;
+      background: #eef2f8;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-weight: 600;
+    }
+    .location-link:active { background: #d9e4f5; }
   </style>
 </head>
 <body>
@@ -229,11 +242,21 @@
       var timeHtml = ev.time
         ? '<div class="card-time">' + escapeHtml(ev.time) + '</div>'
         : '<div class="card-time" style="color:#aaa">--</div>';
+
+      var locationHtml = '';
+      if (ev.location) {
+        var mapsUrl = 'https://maps.google.com/?q=' + encodeURIComponent(ev.location);
+        locationHtml = '<a href="' + mapsUrl + '" target="_blank" rel="noopener noreferrer" class="location-link">' +
+          '&#x1F4CD; ' + escapeHtml(ev.location) + '</a>';
+      }
+
       var descHtml = ev.description
         ? '<div class="card-desc">' + escapeHtml(ev.description) + '</div>'
         : '';
+
       return '<div class="' + cls + '">' + timeHtml +
-             '<div><div class="card-project">' + escapeHtml(ev.project) + '</div>' + descHtml + '</div></div>';
+             '<div style="flex:1"><div class="card-project">' + escapeHtml(ev.project) + '</div>' +
+             locationHtml + descHtml + '</div></div>';
     }
 
     function escapeHtml(str) {
